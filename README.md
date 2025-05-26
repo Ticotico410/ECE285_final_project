@@ -30,7 +30,9 @@ pip install -r requirements.txt
 │   ├── cfg/               # Model configuration files
 │   ├── data/              # Dataset loaders and scripts
 │   ├── engine/            # Training/validation engine
-│   └── models/            # YOLOv8 model definitions
+│   ├── models/            # YOLOv8 model definitions
+    ├── nn/                # YOLOv8 modules based on PyTorch
+│   └── utils/             # Evaluation metrics
 └── runs/                  # Generated output directories (checkpoints, logs, results)
 ```
 
