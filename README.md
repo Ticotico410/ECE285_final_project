@@ -26,6 +26,7 @@ pip install -r requirements.txt
 ```
 ├── main.py                # CLI entry point for training/testing
 ├── requirements.txt       # Python dependencies
+├── setup.py               # Ultralytics dependencies
 ├── ultralytics/           # Modified YOLOv8 source code and configs
 │   ├── cfg/               # Model configuration files
 │   ├── data/              # Dataset loaders and scripts
