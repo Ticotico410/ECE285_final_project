@@ -1,9 +1,9 @@
 # ECE285 Final Project
-# Author: Chenbin Yu, Riqian Hu
+## Author: Chenbin Yu, Riqian Hu
 
 ## Overview
 
-This repository contains a command-line script (`main.py`) for end-to-end training and evaluation of an enhanced YOLOv8 model on custom datasets (e.g., VisDrone). It automates experiment management by organizing checkpoints, detection outputs, metrics, and logs into a consistent `runs/<experiment>` directory.
+This repository contains a command-line script (`main.py`) for end-to-end training and evaluation of an enhanced YOLOv8 model on custom datasets (e.g., VisDrone2019, UAVDT).
 
 ---
 
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 │   ├── models/            # YOLOv8 model definitions
 │   ├── nn/                # YOLOv8 modules based on PyTorch
 │   └── utils/             # Evaluation metrics
-└── runs/                  # Generated output directories (checkpoints, logs, results)
+
 ```
 
 ---
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 
 ### Running Training
 
-To train the model on your dataset (specified in `myVisDrone.yaml` or other YAML config):
+To train the model on your dataset (specified in `VisDrone2019.yaml` or other YAML config):
 
 ```bash
 python main.py --mode train --model runs/yolov8l/train/weights/yolov8l_best.pt
@@ -77,15 +77,10 @@ python main.py --mode test --model runs/yolov8l/train/weights/yolov8l_best.pt
 runs/yolov8l/val/
 ```
 
-  - A `myresults.txt` file summarizing key metrics and timing breakdown.
-  - The `test.log` file automatically copied into the latest validation folder for easy reference.
-
----
-
 ## Experiment Management
 
 - The script infers an experiment name from the `--model` path (e.g., `yolov8l` from `runs/yolov8l/...`).
-- All outputs (train/val) are organized under `runs/<experiment>` for consistency and reproducibility.
+- All outputs (train/val) are organized under `utils/` for consistency and reproducibility.
 
 ---
 
@@ -95,7 +90,3 @@ runs/yolov8l/val/
 - Tune training hyperparameters (epochs, batch size, learning rate) by modifying the `model.train(...)` call in `main.py`.
 
 ---
-
-## License & Citation
-
-Please cite this work if you use it in your research or projects.

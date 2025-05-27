@@ -1,29 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @creat_time      : 2023/10/23 10:30
-# @author          : lijiantao
-# @filename        :  / 
-# @description     :
-# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.nn.init import constant
 
-__all__ = ["UAFM_SpAtten", "UAFM_ChAtten", 'UAFM']
+__all__ = ["ADFFM_SpAtten", "ADFFM_ChAtten", 'ADFFM']
 
 
 # from paddleseg.models import layers
@@ -175,9 +156,9 @@ class ConvBN(nn.Module):
         return bn_out
 
 
-class UAFM(nn.Module):
+class ADFFM(nn.Module):
     """
-    The base of Unified Attention Fusion Module.
+    The base of Attention-Driven Feature Fusion Module.
     Args:
         x_ch (int): The channel of x tensor, which is the low level feature.
         y_ch (int): The channel of y tensor, which is the high level feature.
@@ -212,10 +193,6 @@ class UAFM(nn.Module):
         x = self.conv_x(x)
         return x
 
-    # def prepare_y(self, x, y):
-    #     y_up = F.interpolate(y, torch.shape(x)[2:], mode=self.resize_mode)
-    #     return y_up
-
     def fuse(self, x, y):
         out = x + y
         return out
@@ -233,9 +210,9 @@ class UAFM(nn.Module):
         return out
 
 
-class UAFM_ChAtten(UAFM):
+class ADFFM_ChAtten(ADFFM):
     """
-    The UAFM with channel attention, which uses mean and max values.
+    The ADFFM with channel attention, which uses mean and max values.
     Args:
         x_ch (int): The channel of x tensor, which is the low level feature.
         y_ch (int): The channel of y tensor, which is the high level feature.
@@ -269,45 +246,9 @@ class UAFM_ChAtten(UAFM):
         return out
 
 
-class UAFM_ChAtten_S(UAFM):
+class ADFFM_SpAtten(ADFFM):
     """
-    The UAFM with channel attention, which uses mean values.
-    Args:
-        x_ch (int): The channel of x tensor, which is the low level feature.
-        y_ch (int): The channel of y tensor, which is the high level feature.
-        out_ch (int): The channel of output tensor.
-        ksize (int, optional): The kernel size of the conv for x tensor. Default: 3.
-        resize_mode (str, optional): The resize model in unsampling y tensor. Default: bilinear.
-    """
-
-    def __init__(self, x_ch, y_ch, out_ch, ksize=3, resize_mode='bilinear'):
-        super().__init__(x_ch, y_ch, out_ch, ksize, resize_mode)
-
-        self.conv_xy_atten = nn.Sequential(
-            ConvBNAct(
-                2 * y_ch,
-                y_ch // 2,
-                kernel_size=1, ),
-            ConvBN(
-                y_ch // 2, y_ch, kernel_size=1))
-
-    def fuse(self, x, y):
-        """
-        Args:
-            x (Tensor): The low level feature.
-            y (Tensor): The high level feature.
-        """
-        atten = avg_reduce_hw([x, y])
-        atten = torch.sigmoid(self.conv_xy_atten(atten))
-
-        out = x * atten + y * (1 - atten)
-        out = self.conv_out(out)
-        return out
-
-
-class UAFM_SpAtten(UAFM):
-    """
-    The UAFM with spatial attention, which uses mean and max values.
+    The ADFFM with spatial attention, which uses mean and max values.
     Args:
         x_ch (int): The channel of x tensor, which is the low level feature.
         y_ch (int): The channel of y tensor, which is the high level feature.
@@ -325,12 +266,7 @@ class UAFM_SpAtten(UAFM):
             ConvBN(
                 2, 1, kernel_size=3, padding=1))
         self._scale = nn.Parameter(torch.Tensor(1))
-        nn.init.constant_(self._scale, 1.0)  # 使用常数初始化
-        # self._scale = self.create_parameter(
-        #     shape=[1],
-        #     attr=nn.Parameter(torch.tensor(1.0)),
-        #     dtype="float32")
-        # self._scale.stop_gradient = True
+        nn.init.constant_(self._scale, 1.0) 
 
     def fuse(self, x, y):
         """
@@ -342,40 +278,6 @@ class UAFM_SpAtten(UAFM):
         atten = torch.sigmoid(self.conv_xy_atten(atten))
 
         out = x * atten + y * (self._scale - atten)
-        out = self.conv_out(out)
-        return out
-
-
-class UAFM_SpAtten_S(UAFM):
-    """
-    The UAFM with spatial attention, which uses mean values.
-    Args:
-        x_ch (int): The channel of x tensor, which is the low level feature.
-        y_ch (int): The channel of y tensor, which is the high level feature.
-        out_ch (int): The channel of output tensor.
-        ksize (int, optional): The kernel size of the conv for x tensor. Default: 3.
-        resize_mode (str, optional): The resize model in unsampling y tensor. Default: bilinear.
-    """
-
-    def __init__(self, x_ch, y_ch, out_ch, ksize=3, resize_mode='bilinear'):
-        super().__init__(x_ch, y_ch, out_ch, ksize, resize_mode)
-
-        self.conv_xy_atten = nn.Sequential(
-            ConvBNReLU(
-                2, 2, kernel_size=3, padding=1, ),
-            ConvBN(
-                2, 1, kernel_size=3, padding=1, ))
-
-    def fuse(self, x, y):
-        """
-        Args:
-            x (Tensor): The low level feature.
-            y (Tensor): The high level feature.
-        """
-        atten = avg_reduce_channel([x, y])
-        atten = torch.sigmoid(self.conv_xy_atten(atten))
-
-        out = x * atten + y * (1 - atten)
         out = self.conv_out(out)
         return out
 
